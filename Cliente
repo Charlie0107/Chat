@@ -1,0 +1,106 @@
+import java.io.IOException;
+import java.net.InetSocketAddress;
+import java.net.Socket;
+import java.net.SocketException;
+import java.net.SocketTimeoutException;
+
+import javax.swing.JFrame;
+import javax.swing.JOptionPane;
+
+import com.chatting.controlador.ControladorCliente;
+import com.chatting.modelo.cliente_server;
+import com.chatting.vista.Red_Cliente;
+
+
+public class Cliente {
+	
+	private static JFrame ventana;
+	private static Red_Cliente vista;
+	private static ControladorCliente controlador;
+	private static client cliente;
+	private static cliente_server utilidades;
+	
+	
+
+	public static void main(String[] args) {
+		
+		configurarVentana();
+		
+		try {
+			
+			iniciarCliente();
+			
+			while(!cliente.isClosed()) {
+				utilidades.handleMessage();
+			}
+			
+			while(true) {}
+		} catch (SocketTimeoutException e) {
+			vista.setEnabled(false);
+			JOptionPane.showMessageDialog(ventana, "Conexión perdida (connection timeout)", "Error de conexión", JOptionPane.ERROR_MESSAGE);
+		} catch (SocketException e) {
+			vista.setEnabled(false);
+			JOptionPane.showMessageDialog(ventana, "Servidor no alcanzado. Apagado.", "Error de conexión", JOptionPane.ERROR_MESSAGE);
+		} catch (IOException e) {
+			
+			JOptionPane.showMessageDialog(ventana, e.getMessage(), "Error de conexión", JOptionPane.ERROR_MESSAGE);
+		} 
+		
+	}
+	
+	
+
+	private static void configurarVentana() {
+		
+        ventana = new JFrame("Cliente de chat");
+        vista = new Red_Cliente(ventana);
+        controlador = new ControladorCliente(vista);
+        
+        
+        ventana.setContentPane(vista);
+        vista.setControlador(controlador);
+        ventana.pack();
+        ventana.setResizable(false);
+	}
+    
+	
+    private static void iniciarCliente() throws NumberFormatException, IOException {
+    	String host = JOptionPane.showInputDialog(ventana, "Introduce la IP del host (nada = localhost)", "Datos necesarios", JOptionPane.QUESTION_MESSAGE);
+    	String puerto = JOptionPane.showInputDialog(ventana, "Introduce el puerto (nada = 42455)", "Datos necesarios", JOptionPane.QUESTION_MESSAGE);
+    	String apellido = JOptionPane.showInputDialog(ventana, "Introduce tu apellido", "Datos necesarios", JOptionPane.QUESTION_MESSAGE);
+    	
+    	if(puerto.equals(""))
+    		puerto = "42455";
+    	if(host.equals(""))
+    		host = "localhost";
+		
+    	try {
+    		if(nickname.equals(""))
+    			throw new IOException("Apellido no válido.");
+    		
+    		cliente = new Socket();
+    		cliente.connect(new InetSocketAddress(host, Integer.parseInt(puerto)), 5000);
+    		utilidades = new cliente_server(cliente, vista, controlador);
+    		
+    		
+    		if(utilidades.recibirTCP().trim().equals("aceptado")) {
+    			iniciarChat(apellido);
+    		}else {
+    			utilidades = null;
+    			throw new IOException("Servidor lleno");
+    		}
+    	}catch(NumberFormatException e) {
+    		JOptionPane.showMessageDialog(ventana, "Debes introducir un número de puerto válido.", "Error de conexión", JOptionPane.ERROR_MESSAGE);
+    	}
+    }
+    
+  
+    private static void iniciarChat(String nick) throws IOException {
+    	ventana.setVisible(true);
+		vista.setEnabled(true);
+		controlador.setCliente(utilidades);
+		utilidades.enviarTCP(apellido);
+    }
+    
+    
+}
